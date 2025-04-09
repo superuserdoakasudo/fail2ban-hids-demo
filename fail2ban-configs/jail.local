@@ -1,0 +1,114 @@
+# Fail2ban SSH Protection Configuration
+# Author: Student ID: 22332371
+#
+# This configuration file extends the default jail.conf with custom settings
+# for SSH protection demonstration and testing.
+
+[DEFAULT]
+# "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban
+# will not ban a host which matches an address in this list. Several addresses
+# can be defined using space (and/or comma) separator.
+# Example: ignoreip = 127.0.0.1/8 ::1 192.168.1.0/24
+ignoreip = 127.0.0.1/8 ::1
+
+# "bantime" is the duration in seconds for which an IP is banned.
+# A negative value means permanent ban. Default: 10m
+# For testing purposes, setting a shorter bantime makes it easier to observe effects
+bantime = 300
+
+# "findtime" is the duration in seconds before the current time for which Fail2ban
+# looks back for failures. Default: 10m
+# For testing, we use a shorter findtime to make the system more responsive
+findtime = 60
+
+# "maxretry" is the number of failures before a host gets banned. Default: 5
+# For testing, we use a lower threshold to make it easier to trigger bans
+maxretry = 3
+
+# "banaction" is the action used to ban IPs. Default: iptables-multiport
+banaction = iptables-multiport
+
+# "backend" specifies the backend used to get file modification. Default: auto
+backend = auto
+
+# Output logs to both systemd-journal and a file
+logtarget = /var/log/fail2ban.log
+
+# Use a custom chain for Fail2ban rules. This helps identify Fail2ban-specific rules
+chain = FAIL2BAN
+
+# "action" is the action to execute when banning an IP. 
+# %(action_)s includes default banning actions (like iptables)
+# %(action_mw)s adds a mail notification
+# %(action_mwl)s adds a mail notification with logs
+# For testing, we use a simple action without email notification
+action = %(action_)s
+
+#
+# SSH JAIL CONFIGURATION
+#
+
+[sshd]
+# Enable this jail
+enabled = true
+
+# Filter name
+filter = sshd
+
+# Log file path (adjust to match your system's SSH log path)
+# Common paths:
+# - Ubuntu/Debian: /var/log/auth.log
+# - CentOS/RHEL: /var/log/secure
+# For this demo, we'll support multiple paths to ensure compatibility
+logpath = /var/log/auth.log
+           /var/log/secure
+
+# Port to monitor (SSH normally runs on port 22, but can be configured differently)
+port = ssh,22
+
+# Ban mode (can be allports or only the specified ports)
+# allports bans access to all ports, not just SSH
+mode = normal
+
+# Set custom ban time for SSH (optional, overrides the default)
+bantime = 600
+
+# Set custom find time for SSH (optional, overrides the default)
+findtime = 120
+
+# Set custom max retry for SSH (optional, overrides the default)
+maxretry = 3
+
+# Enable IPv4 and IPv6 banning
+banaction = %(banaction_allports)s
+banaction_allports = iptables-allports
+
+# This is for IPv6
+[sshd-ipv6]
+enabled = true
+filter = sshd
+logpath = /var/log/auth.log
+          /var/log/secure
+port = ssh,22
+mode = normal
+bantime = 600
+findtime = 120
+maxretry = 3
+banaction = iptables-allports-ipv6
+
+#
+# ADDITIONAL TESTING JAIL - MORE STRICT SETTINGS
+#
+
+[sshd-aggressive]
+# This is a more aggressive configuration for demonstration purposes
+enabled = false  # Disabled by default, enable for specific tests
+filter = sshd
+logpath = /var/log/auth.log
+          /var/log/secure
+port = ssh,22
+mode = aggressive
+bantime = 1800  # 30 minutes
+findtime = 60   # 1 minute
+maxretry = 2    # Only 2 attempts allowed
+
